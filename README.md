@@ -1,6 +1,6 @@
 # saqr_voice_assistant
 
-A new Flutter project.
+Flutter Voice Assistant App with ChatGPT & Dall-E AI Image Generation
 
 ## Getting Started
 
