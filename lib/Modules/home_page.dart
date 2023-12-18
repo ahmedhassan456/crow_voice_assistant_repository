@@ -7,12 +7,15 @@ import 'package:saqr_voice_assistant/Styles/Colors/pallete.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (context) => HomePageCubit()..initSpeechToText(),
+          create: (context) => HomePageCubit()
+            ..initSpeechToText()
+            ..initTextToSpeech(),
         ),
         BlocProvider(
           create: (context) => OpenAiCubit(),
@@ -28,39 +31,38 @@ class HomePage extends StatelessWidget {
               title: const Text('Crow'),
               centerTitle: true,
             ),
-            body: Center(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    // Vietual Assistant Picture
-                    Stack(
-                      children: [
-                        Container(
-                          height: 120,
-                          width: 120,
-                          margin: const EdgeInsets.only(top: 4.0),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Pallete.assistantCircleColor,
-                          ),
+            body: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        height: 120,
+                        width: 120,
+                        margin: const EdgeInsets.only(top: 4.0),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Pallete.assistantCircleColor,
                         ),
-                        Container(
-                          height: 123.0,
-                          width: 120.0,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            image: DecorationImage(
-                              image: AssetImage(
-                                'assets/images/crow.png',
-                              ),
+                      ),
+                      Container(
+                        height: 123.0,
+                        width: 120.0,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          image: DecorationImage(
+                            image: AssetImage(
+                              'assets/images/crow.png',
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    // Chat bubble
+                      ),
+                    ],
+                  ),
+                  if (cubit.generatedImageUrl == null)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10.0,
@@ -81,19 +83,50 @@ class HomePage extends StatelessWidget {
                           bottomRight: Radius.circular(20.0),
                         ),
                       ),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 10.0),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10.0),
                         child: Text(
-                          'Good Morning, what task can I do for you?',
+                          cubit.generatedContent ??
+                              'Good Morning, what task can I do for you?',
                           style: TextStyle(
                             color: Pallete.mainFontColor,
-                            fontSize: 25.0,
+                            fontSize:
+                                cubit.generatedContent == null ? 25.0 : 18.0,
                             fontFamily: 'Cera Pro',
                           ),
                         ),
                       ),
                     ),
+                  if (cubit.generatedImageUrl != null)
                     Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10.0,
+                        vertical: 10.0,
+                      ),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 10.0,
+                      ).copyWith(
+                        top: 30.0,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Pallete.borderColor,
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(20.0),
+                          bottomLeft: Radius.circular(20.0),
+                          bottomRight: Radius.circular(20.0),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10.0),
+                        child: Image.network(cubit.generatedImageUrl!),
+                      ),
+                    ),
+                  Visibility(
+                    visible: cubit.generatedContent == null &&
+                        cubit.generatedImageUrl == null,
+                    child: Container(
                       padding: const EdgeInsets.all(10.0),
                       margin: const EdgeInsets.only(
                         top: 10.0,
@@ -110,8 +143,12 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Features list
-                    Column(
+                  ),
+                  // Features list
+                  Visibility(
+                    visible: cubit.generatedContent == null &&
+                        cubit.generatedImageUrl == null,
+                    child: Column(
                       children: [
                         featureBox(
                           Pallete.firstSuggestionBoxColor,
@@ -130,26 +167,16 @@ class HomePage extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             floatingActionButton: FloatingActionButton(
               backgroundColor: Pallete.firstSuggestionBoxColor,
-              child: const Icon(Icons.mic),
+              child:
+                  Icon(cubit.speechToText.isListening ? Icons.stop : Icons.mic),
               onPressed: () async {
-                if (await cubit.speechToText.hasPermission &&
-                    cubit.speechToText.isNotListening) {
-                  await cubit.startListening();
-                } else if (cubit.speechToText.isListening) {
-                  String prompt = cubit.lastWords;
-                  final speech =
-                      await OpenAiCubit.get(context).isArtPromptApi(prompt);
-                  print(speech);
-                  await cubit.stopListening();
-                } else {
-                  cubit.initSpeechToText();
-                }
+                await cubit.floatingButton(context);
               },
             ),
           );

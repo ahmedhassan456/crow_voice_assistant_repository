@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
-import 'package:saqr_voice_assistant/Cubits/OpenAIAPICubit/openAI_API_States.dart';
+import 'package:saqr_voice_assistant/Cubits/OpenAIAPICubit/openai_api_states.dart';
 
 import '../../Shared/constant.dart';
 
@@ -13,6 +13,7 @@ class OpenAiCubit extends Cubit<OpenAiStates> {
 
   List<Map<String, String>> messages = [];
   Future<String> isArtPromptApi(String prompt) async {
+    emit(OpenAiIsArtPromptLoadingState());
     try {
       final response = await http.post(
         Uri.parse('https://api.openai.com/v1/chat/completions'),
@@ -30,7 +31,6 @@ class OpenAiCubit extends Cubit<OpenAiStates> {
           ]
         }),
       );
-      print(response.body);
       if(response.statusCode == 200){
         String content = jsonDecode(response.body)['choices'][0]['message']['content'];
         content = content.trim();
@@ -61,6 +61,7 @@ class OpenAiCubit extends Cubit<OpenAiStates> {
       'content': prompt,
     });
     try {
+      emit(OpenAiChatGPTLoadingState());
       final response = await http.post(
         Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
@@ -81,9 +82,9 @@ class OpenAiCubit extends Cubit<OpenAiStates> {
           'role': 'assistant',
           'content': content,
         });
+        emit(OpenAiChatGPTSuccessState());
         return content;
       }
-      emit(OpenAiChatGPTSuccessState());
     } catch (e) {
       emit(OpenAiChatGPTErrorState());
       return e.toString();
@@ -97,6 +98,7 @@ class OpenAiCubit extends Cubit<OpenAiStates> {
       'content': prompt,
     });
     try {
+      emit(OpenAiDellELoadingState());
       final response = await http.post(
         Uri.parse('https://api.openai.com/v1/images/generations'),
         headers: {
